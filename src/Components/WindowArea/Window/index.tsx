@@ -6,6 +6,7 @@ import {
   BackIcon,
   CloseIcon,
   MinimizeIcon,
+  AddTabIcon, // 追加するタブ用のアイコン
 } from "./Icons";
 import { useStore } from "nanostores/preact";
 import { ThemeStore } from "../../../store/darkMode";
@@ -21,13 +22,6 @@ interface Props {
   Component?: any;
   height?: number;
   width?: number;
-}
-
-// Taken from puruVJ's macos web code :[]
-export function randint(lower: number, upper: number) {
-  if (lower > upper) [lower, upper] = [upper, lower];
-
-  return lower + Math.floor((upper - lower) * Math.random());
 }
 
 export const WindowHolder: FunctionComponent<Props> = ({
@@ -53,6 +47,17 @@ export const WindowHolder: FunctionComponent<Props> = ({
   const randY = useMemo(() => randint(-100, 100), []);
 
   const [isMaximized, setIsMaximized] = useState(false);
+  const [tabs, setTabs] = useState(["https://www.example.com"]); // タブの初期状態
+  const [activeTab, setActiveTab] = useState(0);
+
+  const addTab = () => {
+    setTabs([...tabs, "https://www.example.com"]);
+    setActiveTab(tabs.length);
+  };
+
+  const changeTab = (index: number) => {
+    setActiveTab(index);
+  };
 
   return (
     <Rnd
@@ -65,12 +70,6 @@ export const WindowHolder: FunctionComponent<Props> = ({
       minWidth="300"
       minHeight="300"
       bounds="parent"
-      style={
-        {
-          // transition: "height 0.2s ease, width 0.2s ease",
-          // transition: "all 0.3s ease",
-        }
-      }
       size={
         isMaximized && {
           width: isMaximized ? document.body.clientWidth : 320,
@@ -127,14 +126,44 @@ export const WindowHolder: FunctionComponent<Props> = ({
             </div>
           </div>
         </div>
-        {/* {children ? (
-        ) : ( */}
+        
         <div className={styles.content}>
-          {children ? (
-            children
+          {window_icon === "src/assets/icons/startmenu/icons8-microsoft-edge.svg" ? (
+            <div>
+              <div className={styles.tabbar}>
+                {tabs.map((tab, index) => (
+                  <button
+                    key={index}
+                    className={activeTab === index ? styles.activeTab : ""}
+                    onClick={() => changeTab(index)}
+                  >
+                    Tab {index + 1}
+                  </button>
+                ))}
+                <button onClick={addTab}>
+                  <AddTabIcon />
+                </button>
+              </div>
+              <iframe
+                src={tabs[activeTab]}
+                width="100%"
+                height="100%"
+                style={{ border: "none" }}
+              />
+            </div>
+          ) : window_icon === "src/assets/icons/taskbar/file_explorer.webp" ? (
+            <div className={styles.file_explorer}>
+              {/* Windows風のファイルエクスプローラをここに実装 */}
+              <h4>ファイル エクスプローラ</h4>
+              <ul>
+                <li>Documents</li>
+                <li>Downloads</li>
+                <li>Pictures</li>
+                <li>Music</li>
+              </ul>
+            </div>
           ) : (
             <>
-              {" "}
               <img
                 class={styles.content_image}
                 src={window_icon}
@@ -144,7 +173,6 @@ export const WindowHolder: FunctionComponent<Props> = ({
             </>
           )}
         </div>
-        {/* )} */}
       </div>
     </Rnd>
   );
