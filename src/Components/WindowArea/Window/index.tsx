@@ -24,6 +24,12 @@ interface Props {
   width?: number;
 }
 
+// ランダムな整数を生成するヘルパー関数
+export function randint(lower: number, upper: number) {
+  if (lower > upper) [lower, upper] = [upper, lower];
+  return lower + Math.floor((upper - lower) * Math.random());
+}
+
 export const WindowHolder: FunctionComponent<Props> = ({
   children,
   window_icon,
@@ -38,10 +44,9 @@ export const WindowHolder: FunctionComponent<Props> = ({
 
   const ICON_COLOR_LIGHT = "#000000";
   const ICON_COLOR_DARK = "#ffffff";
-
   const ICON_COLOR = theme === "dark" ? ICON_COLOR_DARK : ICON_COLOR_LIGHT;
 
-  const WindowRef = useRef<HTMLDivElement>();
+  const WindowRef = useRef<HTMLDivElement>(null);
 
   const randX = useMemo(() => randint(-600, 100), []);
   const randY = useMemo(() => randint(-100, 100), []);
@@ -71,17 +76,14 @@ export const WindowHolder: FunctionComponent<Props> = ({
       minHeight="300"
       bounds="parent"
       size={
-        isMaximized && {
-          width: isMaximized ? document.body.clientWidth : 320,
-          height: isMaximized ? document.body.clientHeight - 50 : 300,
-        }
+        isMaximized ? {
+          width: document.body.clientWidth,
+          height: document.body.clientHeight - 50,
+        } : undefined
       }
-      {...{
-        position: isMaximized && {
-          x: isMaximized ? 0 : undefined,
-          y: isMaximized ? 0 : undefined,
-        },
-      }}
+      position={
+        isMaximized ? { x: 0, y: 0 } : undefined
+      }
       dragHandleClassName="app-drag-handler"
     >
       <div ref={WindowRef} class={styles.container}>
@@ -90,7 +92,7 @@ export const WindowHolder: FunctionComponent<Props> = ({
             {show_back ? (
               <BackIcon />
             ) : (
-              <img src={window_icon} class={styles.title_icon} />
+              <img src={window_icon} class={styles.title_icon} alt={window_name} />
             )}
             <p>{window_name}</p>
           </div>
@@ -99,26 +101,26 @@ export const WindowHolder: FunctionComponent<Props> = ({
               <MinimizeIcon height="14" width="14" color={ICON_COLOR} />
             </div>
             <div
-              onClick={() => {
-                setIsMaximized((prev) => !prev);
-              }}
+              onClick={() => setIsMaximized((prev) => !prev)}
               className={styles.icon}
             >
               <MaximizeIcon color={ICON_COLOR} height="14" width="14" />
             </div>
             <div
               onClick={() => {
-                WindowRef.current.classList.add(styles.close);
-                setTimeout(() => {
-                  OpenApps.set({
-                    ...OpenedApps,
-                    [appid]: {
-                      ...OpenedApps[appid],
-                      isActive: false,
-                    },
-                  });
-                  WindowRef.current.classList.remove(styles.close);
-                }, 100);
+                if (WindowRef.current) {
+                  WindowRef.current.classList.add(styles.close);
+                  setTimeout(() => {
+                    OpenApps.set({
+                      ...OpenedApps,
+                      [appid]: {
+                        ...OpenedApps[appid],
+                        isActive: false,
+                      },
+                    });
+                    WindowRef.current?.classList.remove(styles.close);
+                  }, 100);
+                }
               }}
               className={[styles.icon, styles.close].join(" ")}
             >
@@ -149,11 +151,11 @@ export const WindowHolder: FunctionComponent<Props> = ({
                 width="100%"
                 height="100%"
                 style={{ border: "none" }}
+                title={`Tab ${activeTab + 1}`}
               />
             </div>
           ) : window_icon === "src/assets/icons/taskbar/file_explorer.webp" ? (
             <div className={styles.file_explorer}>
-              {/* Windows風のファイルエクスプローラをここに実装 */}
               <h4>ファイル エクスプローラ</h4>
               <ul>
                 <li>Documents</li>
