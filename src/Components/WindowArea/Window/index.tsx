@@ -6,7 +6,6 @@ import {
   BackIcon,
   CloseIcon,
   MinimizeIcon,
-  AddTabIcon, // 追加するタブ用のアイコン
 } from "./Icons";
 import { useStore } from "nanostores/preact";
 import { ThemeStore } from "../../../store/darkMode";
@@ -24,9 +23,10 @@ interface Props {
   width?: number;
 }
 
-// ランダムな整数を生成するヘルパー関数
+// Taken from puruVJ's macos web code :[]
 export function randint(lower: number, upper: number) {
   if (lower > upper) [lower, upper] = [upper, lower];
+
   return lower + Math.floor((upper - lower) * Math.random());
 }
 
@@ -44,25 +44,15 @@ export const WindowHolder: FunctionComponent<Props> = ({
 
   const ICON_COLOR_LIGHT = "#000000";
   const ICON_COLOR_DARK = "#ffffff";
+
   const ICON_COLOR = theme === "dark" ? ICON_COLOR_DARK : ICON_COLOR_LIGHT;
 
-  const WindowRef = useRef<HTMLDivElement>(null);
+  const WindowRef = useRef<HTMLDivElement>();
 
   const randX = useMemo(() => randint(-600, 100), []);
   const randY = useMemo(() => randint(-100, 100), []);
 
   const [isMaximized, setIsMaximized] = useState(false);
-  const [tabs, setTabs] = useState(["https://www.example.com"]); // タブの初期状態
-  const [activeTab, setActiveTab] = useState(0);
-
-  const addTab = () => {
-    setTabs([...tabs, "https://www.example.com"]);
-    setActiveTab(tabs.length);
-  };
-
-  const changeTab = (index: number) => {
-    setActiveTab(index);
-  };
 
   return (
     <Rnd
@@ -75,15 +65,24 @@ export const WindowHolder: FunctionComponent<Props> = ({
       minWidth="300"
       minHeight="300"
       bounds="parent"
+      style={
+        {
+          // transition: "height 0.2s ease, width 0.2s ease",
+          // transition: "all 0.3s ease",
+        }
+      }
       size={
-        isMaximized ? {
-          width: document.body.clientWidth,
-          height: document.body.clientHeight - 50,
-        } : undefined
+        isMaximized && {
+          width: isMaximized ? document.body.clientWidth : 320,
+          height: isMaximized ? document.body.clientHeight - 50 : 300,
+        }
       }
-      position={
-        isMaximized ? { x: 0, y: 0 } : undefined
-      }
+      {...{
+        position: isMaximized && {
+          x: isMaximized ? 0 : undefined,
+          y: isMaximized ? 0 : undefined,
+        },
+      }}
       dragHandleClassName="app-drag-handler"
     >
       <div ref={WindowRef} class={styles.container}>
@@ -92,7 +91,7 @@ export const WindowHolder: FunctionComponent<Props> = ({
             {show_back ? (
               <BackIcon />
             ) : (
-              <img src={window_icon} class={styles.title_icon} alt={window_name} />
+              <img src={window_icon} class={styles.title_icon} />
             )}
             <p>{window_name}</p>
           </div>
@@ -101,26 +100,26 @@ export const WindowHolder: FunctionComponent<Props> = ({
               <MinimizeIcon height="14" width="14" color={ICON_COLOR} />
             </div>
             <div
-              onClick={() => setIsMaximized((prev) => !prev)}
+              onClick={() => {
+                setIsMaximized((prev) => !prev);
+              }}
               className={styles.icon}
             >
               <MaximizeIcon color={ICON_COLOR} height="14" width="14" />
             </div>
             <div
               onClick={() => {
-                if (WindowRef.current) {
-                  WindowRef.current.classList.add(styles.close);
-                  setTimeout(() => {
-                    OpenApps.set({
-                      ...OpenedApps,
-                      [appid]: {
-                        ...OpenedApps[appid],
-                        isActive: false,
-                      },
-                    });
-                    WindowRef.current?.classList.remove(styles.close);
-                  }, 100);
-                }
+                WindowRef.current.classList.add(styles.close);
+                setTimeout(() => {
+                  OpenApps.set({
+                    ...OpenedApps,
+                    [appid]: {
+                      ...OpenedApps[appid],
+                      isActive: false,
+                    },
+                  });
+                  WindowRef.current.classList.remove(styles.close);
+                }, 100);
               }}
               className={[styles.icon, styles.close].join(" ")}
             >
@@ -128,44 +127,14 @@ export const WindowHolder: FunctionComponent<Props> = ({
             </div>
           </div>
         </div>
-        
+        {/* {children ? (
+        ) : ( */}
         <div className={styles.content}>
-          {window_icon === "src/assets/icons/startmenu/icons8-microsoft-edge.svg" ? (
-            <div>
-              <div className={styles.tabbar}>
-                {tabs.map((tab, index) => (
-                  <button
-                    key={index}
-                    className={activeTab === index ? styles.activeTab : ""}
-                    onClick={() => changeTab(index)}
-                  >
-                    Tab {index + 1}
-                  </button>
-                ))}
-                <button onClick={addTab}>
-                  <AddTabIcon />
-                </button>
-              </div>
-              <iframe
-                src={tabs[activeTab]}
-                width="100%"
-                height="100%"
-                style={{ border: "none" }}
-                title={`Tab ${activeTab + 1}`}
-              />
-            </div>
-          ) : window_icon === "src/assets/icons/taskbar/file_explorer.webp" ? (
-            <div className={styles.file_explorer}>
-              <h4>ファイル エクスプローラ</h4>
-              <ul>
-                <li>Documents</li>
-                <li>Downloads</li>
-                <li>Pictures</li>
-                <li>Music</li>
-              </ul>
-            </div>
+          {children ? (
+            children
           ) : (
             <>
+              {" "}
               <img
                 class={styles.content_image}
                 src={window_icon}
@@ -175,6 +144,7 @@ export const WindowHolder: FunctionComponent<Props> = ({
             </>
           )}
         </div>
+        {/* )} */}
       </div>
     </Rnd>
   );
