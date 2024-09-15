@@ -54,6 +54,51 @@ export const WindowHolder: FunctionComponent<Props> = ({
 
   const [isMaximized, setIsMaximized] = useState(false);
 
+  // ブラウザ機能のためのstate管理
+  const [url, setUrl] = useState("https://www.bing.com");
+  const iframeRef = useRef<HTMLIFrameElement>();
+  const [history, setHistory] = useState<string[]>([url]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  // URL入力の変更時にiframeのsrcを更新
+  const handleUrlChange = (e) => {
+    setUrl(e.target.value);
+  };
+
+  const navigateToUrl = (newUrl: string) => {
+    const formattedUrl = newUrl.startsWith("http")
+      ? newUrl
+      : `https://${newUrl}`;
+    setUrl(formattedUrl);
+    iframeRef.current.src = formattedUrl;
+
+    // 履歴に追加
+    const newHistory = [...history];
+    newHistory.splice(historyIndex + 1);
+    setHistory([...newHistory, formattedUrl]);
+    setHistoryIndex((prev) => prev + 1);
+  };
+
+  const goBack = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex((prev) => prev - 1);
+      setUrl(history[historyIndex - 1]);
+      iframeRef.current.src = history[historyIndex - 1];
+    }
+  };
+
+  const goForward = () => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex((prev) => prev + 1);
+      setUrl(history[historyIndex + 1]);
+      iframeRef.current.src = history[historyIndex + 1];
+    }
+  };
+
+  const reloadPage = () => {
+    iframeRef.current.src = iframeRef.current.src;
+  };
+
   return (
     <Rnd
       default={{
@@ -65,12 +110,6 @@ export const WindowHolder: FunctionComponent<Props> = ({
       minWidth="300"
       minHeight="300"
       bounds="parent"
-      style={
-        {
-          // transition: "height 0.2s ease, width 0.2s ease",
-          // transition: "all 0.3s ease",
-        }
-      }
       size={
         isMaximized && {
           width: isMaximized ? document.body.clientWidth : 320,
@@ -127,24 +166,49 @@ export const WindowHolder: FunctionComponent<Props> = ({
             </div>
           </div>
         </div>
-        {/* {children ? (
-        ) : ( */}
+
         <div className={styles.content}>
-          {children ? (
-            children
-          ) : (
-            <>
-              {" "}
-              <img
-                class={styles.content_image}
-                src={window_icon}
-                alt={window_name}
+          {/* Edgeブラウザの基本機能実装 */}
+          {window_icon === "src/assets/icons/startmenu/icons8-microsoft-edge.svg" && (
+            <div className={styles.browser}>
+              <div className={styles.browser_controls}>
+                <button onClick={goBack}>←</button>
+                <button onClick={goForward}>→</button>
+                <button onClick={reloadPage}>⟳</button>
+                <input
+                  type="text"
+                  value={url}
+                  onChange={handleUrlChange}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      navigateToUrl(url);
+                    }
+                  }}
+                />
+                <button onClick={() => navigateToUrl(url)}>Go</button>
+              </div>
+              <iframe
+                ref={iframeRef}
+                src={url}
+                width="100%"
+                height="100%"
+                style={{ border: "none" }}
               />
-              <h4>Coming Soon!</h4>
-            </>
+            </div>
+          )}
+          {/* File Explorer */}
+          {window_icon === "src/assets/icons/taskbar/file_explorer.webp" && (
+            <div className={styles.file_explorer}>
+              <h4>ファイル エクスプローラ</h4>
+              <ul>
+                <li>Documents</li>
+                <li>Downloads</li>
+                <li>Pictures</li>
+                <li>Music</li>
+              </ul>
+            </div>
           )}
         </div>
-        {/* )} */}
       </div>
     </Rnd>
   );
